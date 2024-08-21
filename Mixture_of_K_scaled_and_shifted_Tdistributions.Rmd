@@ -1,0 +1,753 @@
+---
+title: "Mixture of K scaled and shifted t-distributions"
+output:
+  html_document:
+    toc: true  # Table of Contents
+    toc_depth: 2  # Depth of headers in the Table of Contents
+    code_folding: hide
+  pdf_document: default
+date: "2024-08-15"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Introduktion
+In this project, I will examine a mixture of K scaled and shifted t-distributions.
+
+The scaled and shifted t-distributions have the following PDF.
+$$f(x|\mu,\sigma,\nu)=\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi\nu\sigma^2}\Gamma(\nu/2)}(1+\frac{(x-\mu)^2}{\nu\sigma^2})^{-(\nu+1)/2}$$
+$\mu\in 	\mathbb{R}$, $\sigma>0$ and $\nu>0$
+
+With the mixed distribution.
+
+$$\sum_{k=1}^{K} \pi_k f(x|\mu_k,\sigma_k,\nu_k)$$
+
+# A littel theory
+The EM algorithm consists of a two-step optimization process to maximize the likelihood. In the Expectation (E) step, the posterior probabilities are calculated. In the Maximization (M) step, the likelihood is maximized to find the parameters, given the posterior probabilities.
+
+
+
+
+## Posterior probabilities (Expectation step)
+The posterior probabilities correspond to the probability that an outcome is drawn from a given distribution.
+$$P(Z=\pi_k|x_i)=\frac{P(x_i|Z=\pi_k)P(Z_i=\pi_k)}{P(x_i)}=\frac{\pi_kf(x_i|\mu_k,\sigma_k,\nu_k)}{\sum_{k=1}^{K}{\pi_k}f(x_i|\mu_k,\sigma_k,\nu_k)}=w(x_i)$$
+
+
+
+## Maximization step M step:
+In the M step, the coefficients $\{\pi_k,\theta_k\}$  are estimated, where $\theta_k=\{\mu_k,\sigma_k,\nu_k\}$
+
+
+# Log Likelyhood
+The simplification of writing makes it possible to express the density in the form $f(x|\pi,\theta)\sum_{k=1}^K \pi_kf(x|\theta_k)$
+where $\theta_i=\{\mu_i,\sigma_i^2,\nu_i\}$. 
+
+
+Making the the likelihood
+$$L(\pi_k,\theta_k)=\sum_{i=1}^{N}\sum_{k=1}^{K}\pi_kf(x_i|\theta_k)$$
+
+and the negative log likelihood.
+$$l(\pi_k,\theta_k)=-\sum_{i=1}^{N} log(\sum_{k=1}^{K}\pi_kf(x_i|\theta_k))$$
+
+For the estimation of $\pi_k$ Lagrange optimization can be used on the negative log-likelihood. It should be noted that  $\sum_{k=1}^{K}\pi_k =1$. corresponds to the linear constraint.
+
+The Lagrange function becomes
+$$\mathcal{L}(\pi_k)=-\sum_{i=1}^{N} log(\sum_{k=1}^{K}\pi_kf(x_i|\theta_k))-(\lambda\sum_{k=1}^{K}\pi_k-1)$$
+
+Lagrange optimization requires the objective function to be convex. Convexity can be checked using the second derivative.
+
+Fist derivative.
+$$\frac{\partial l(\pi_k,\theta_k)}{\partial \pi_k}=-\sum_{i=1}^{n}\frac{f(x_i|\theta_k)}{\sum_{k=1}^{K}\pi_kf(x_i|\theta_k)}$$
+
+Second derivative.
+$$\frac{\partial^2 l(\pi_k,\theta_k)}{\partial^2 \pi_k}=\sum_{i=1}^{n}\frac{f(x_i|\theta_k)^2}{(\sum_{k=1}^{K}\pi_kf(x_i|\theta_k))^2}>0$$
+Since the second derivative of the negative log-likelihood is positive for all values of $X$, the function is convex. This follows from the fact that $f(x_i,\theta_k),\pi_k>0$ by the definition of probabilities.
+
+### Solving the lagrancian.
+
+$$\mathcal{L}(\pi_k)=-\sum_{i=1}^{N} log(\sum_{k=1}^{K}\pi_kf(x_i|\theta_k))-(\lambda\sum_{k=1}^{K}\pi_k-1)$$
+
+Fist derivative.
+$$\frac{\partial\mathcal{L}(\pi_k)}{\partial \pi_k}=\sum_{i=1}^{N}\frac{f(x_i|\theta_k)}{\sum_{k=1}^{K}\pi_kf(x_i|\theta_k)} +\lambda =\sum_{i=1}^{N}w(x_i)\frac{1}{\pi_k} +\lambda =0$$
+The left side is the same as the weight, which is the posterior probabilities multiplied by $\pi_k$. 
+
+This gives a condition for the optimal value.
+$$\sum_{i=1}^{N}w(x_i)+\pi_k\lambda = 0 => -\frac{1}{\pi_k}\sum_{i=1}^{N}w(x_i) =\lambda $$
+But since $\sum_{i=1}^{N}w(x_i)+\pi_k\lambda = 0$  must hold for all $k$
+and that $\sum_{k=1}^{K}w(x_i)=1$, since these are the posterior probabilities.
+One can derive.
+$$\begin{aligned}
+0=\sum_{k=1}^{K}(\sum_{i=1}^{N}w(x_i)+\pi_k\lambda )=\sum_{k=1}^{K}\sum_{i=1}^{N}w(x_i)+\sum_{k=1}^{K}\pi_k\lambda =\sum_{k=1}^{K}\sum_{i=1}^{N}w(x_i)+\lambda \\= \sum_{k=1}^{K}\sum_{i=1}^{N}w(x_i) -\frac{1}{\pi_k}\sum_{i=1}^{N}w(x_i)=\sum_{i=1}^{N}\sum_{k=1}^{K}w(x_i)
+-\frac{1}{\pi_k}\sum_{i=1}^{N}w(x_i) \\
+\sum_{i=1}^{N}\sum_{k=1}^{K}w(x_i)
+-\frac{1}{\pi_k}\sum_{i=1}^{N}w(x_i)=N-\frac{1}{\pi_k}\sum_{i=1}^{N}w(x_i)\\ => \hat{\pi}_k= \frac{1}{N}\sum_{i=1}^{N}w(x_i)
+\end{aligned}$$
+
+
+The estimate for the probability of drawing from a given distribution is the average of the weights.
+
+## Estiamtion of $\theta_k=\{\mu_k,\sigma_k,\nu_k\}$
+The estimation of the parameters $\theta_k={\mu_k,\sigma_k,\nu_k}$
+is done by minimizing the negative log-likelihood.
+
+As demonstrated below, the problem is that there is no closed-form solution. This arises from the fact that there is a sum in the denominator of the gradient.
+
+
+# Gradient of $\theta_k$
+$$\frac{\partial l(\theta_k)  }{\partial \theta_k} =- \sum_{i=1}^{N}\frac{\pi_k}{\sum_{k}^{K}\pi_{k}f(x_i|\theta_k)}\frac{\partial f(x_i|\theta_k)  }{\partial \theta_k}$$
+Note that in the above, it is almost the sum of the weights, so it can be useful to express$\frac{\partial f(x_i|\theta_k)}{\partial\theta_k}$ in terms of $f(x_i|\theta_k)$,  if possible.
+
+Since $\theta_k$ is a simplified notation for the parameters $\{\mu_k,\sigma_k,\nu_k\}$, which are the parameters of interest to estimate, the derivatives with respect to these parameters will be calculated and substituted into the formula above.
+
+In the next section, 
+$\frac{\partial f(x_i|\theta_k)  }{\partial \theta_k}$ will be found with respect to 
+$\{\mu_k,\sigma_k,\nu_k\}$  and substituted into $\frac{\partial l(\theta_k)  }{\partial \theta_k}$ to give a formula for $\frac{\partial l(\theta_k)  }{\partial \theta_k}$
+to provide a formula for $\frac{\partial l(\theta_k)  }{\partial \theta_k}$.
+
+
+# Finding the gradient of negativ log likelyhood for $\nu_k$
+
+$$\frac{\partial f(x_i|\mu_k,\sigma_k,\nu_k)}{\partial \mu_k}=(\nu_k+1)(\frac{x_i-\mu_k}{\nu_k\sigma_k^2})(1+\frac{(x_i-\mu_k)^2}{\nu_k\sigma_k^2})^{-1}f(x_i|\mu_k,\sigma_k^2,\nu_k)=(\nu_k+1)\frac{x_i-\mu_k}{\nu_k\sigma_k^2+(x_i-\mu_k)^2}f(x_i|\mu_k,\sigma_k,\nu_k)$$
+Leading to.
+
+$$\begin{aligned}
+\frac{\partial l(\mu_k,\sigma_k,\nu_k)  }{\partial \mu_k} =- \sum_{i=1}^{N}\frac{\pi_k}{\sum_{k}^{K}\pi_{k}f(x_i|\mu_k,\sigma_k^2,\nu_k)}\frac{\partial f(x_i|\mu_k,\sigma_k,\nu_k)  }{\partial \mu_k}=-(\nu_k+1)\sum_{i=1}^{N}w(x_i)\frac{x_i-\mu_k}{\nu_k\sigma_k^2+(x_i-\mu_k)^2}
+\end{aligned}$$
+
+Note that a closed form does not seem possible since $x_i$
+appears in the denominator, and the sum cannot be split. However, the gradient can still be used for faster implementation.
+
+## Finding the gradient of negativ log likelyhood for $\sigma_k$
+
+
+$$\frac{\partial l(\mu_k,\sigma_k,\nu_k)  }{\partial \sigma_k} =- \sum_{i=1}^{N}\frac{\pi_k}{\sum_{k}^{K}\pi_{k}f(x_i|\mu_k,\sigma_k\nu_k)}\frac{\partial f(x_i|\mu_k,\sigma_k,\nu_k)  }{\partial \sigma_k}$$
+$$\begin{aligned}
+\frac{\partial f(x_i|\mu_k,\sigma_k,\nu_k)  }{\partial \sigma_k}=\frac{-1}{\sigma}f(x_i|\mu_k,\sigma_k,\nu_k)+\frac{(\nu_k+1)(x-\mu_k)^2}{\nu_k\sigma_k^3}\frac{\nu_k\sigma_k^2}{\nu_k\sigma_k^2+(x-\mu_k)^2}f(x_i|\mu_k,\sigma_k,\nu_k)=\\
+\frac{1}{\sigma_k}f(x_i|\mu_k,\sigma_k,\nu_k)(-1+\frac{(v_k+1)(x_i-\mu_k)^2}{\nu_k\sigma_k +(x_i-\mu_k)^2})
+\end{aligned}$$
+
+This leads to the gradient
+
+$$\frac{\partial l(\mu_k,\sigma_k,\nu_k)  }{\partial \sigma_k} = -\sum_{i=1}^{N}w(x_i)(-1+\frac{(\nu_k+1)(x_i-\mu_k)^2}{\nu_k\sigma_k +(x_i-\mu_k)^2})\frac{1}{\sigma_k}$$
+Since the denominator cannot be split, the expression cannot be simplified.
+
+$$\frac{\partial l(\mu_k,\sigma_k,\nu_k)}{\partial \nu_k}=- \sum_{i=1}^{N}\frac{\pi_k}{\sum_{k}^{K}\pi_{k}f(x_i|\mu_i,\sigma_i\nu_i)} \frac{\partial f(x|\mu_k,\sigma_k,\nu_k) }{\partial \nu_k}$$
+
+It can be useful to know that
+$$\frac{\partial \frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}}{\partial \nu}=\frac{\psi((\nu_k+1)/2)}{2\Gamma(\nu_k/2)}-\frac{\Gamma((\nu_k+1)/2)}{2\Gamma(\nu_k/2)^2}\psi(\nu_k/2)=\frac{\psi((\nu_k+1)/2)}{2\Gamma((\nu_k+1)/2)}\frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}-\frac{\psi(\nu_k/2)}{2\Gamma(\nu_k/2)}\frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}
+$$
+
+Giving the derivative.
+
+$$\begin{align*}
+\frac{\partial f(x_i|\mu_k,\sigma_k^2,\nu_k) }{\partial \nu_k}=-\frac{1}{2\nu_k}\frac{\Gamma((\nu_k+1)/2)}{\sqrt{\pi\nu_k\sigma_k^2}\Gamma(\nu_k/2)}(1+\frac{(x_i-\mu_k)^2}{\nu_k\sigma_k^2})^{\frac{-(\nu_k+1)}{2}}\\
++\frac{(x_i-\mu_k)^2(\nu_k+1)}{\nu_k\sigma^2+(x_i-\mu_k)^2}\frac{1}{2\nu_k}\frac{\Gamma((\nu_k+1)/2)}{\sqrt{\pi\nu_k\sigma_k^2}\Gamma(\nu_k/2)}(1+\frac{(x_i-\mu_k)^2}{\nu_k\sigma_k^2})^{\frac{-(\nu_k+1)}{2}-1}
+\\
++\frac{\partial \frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}}{\partial \nu_k}\frac{1}{\sqrt{\pi\nu_k\sigma_k^2}}(1+\frac{(x_i-\mu_k)^2}{\nu_k \sigma_k^2})^{\frac{-(\nu_k+1)}{2}}
+\\=\\
+-\frac{1}{2\nu_k}f(x_i|\mu_k,\sigma_k^2,\nu_k)\\
++\frac{(x_i-\mu_k)^2(\nu_k+1)}{\nu_k\sigma_k^2+(x_i-\mu_k)^2}\frac{1}{2\nu_k}f(x|\mu_k,\sigma_k^2,\nu_k)
+\\
+\\+\frac{\psi((\nu_k+1)/2)}{2\Gamma((\nu_k+1)/2)}\frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}\frac{1}{\sqrt{\pi\nu_k\sigma_k^2}}(1+\frac{(x_i-\mu_k)^2}{\nu_k\sigma_k^2})^{-\frac{\nu_k+1}{2}}\\
+-\frac{\psi(\nu_k/2)}{2\Gamma(\nu_k/2)}\frac{\Gamma((\nu_k+1)/2)}{\Gamma(\nu_k/2)}\frac{1}{\sqrt{\pi\nu_k\sigma_k^2}}(1+\frac{(x_i-\mu_k)^2}{\nu_k\sigma_k^2})^{-\frac{\nu_k+1}{2}}\\
+=\\
+-\frac{1}{2\nu_k}f(x_i|\mu_k,\sigma_k^2,\nu_k)\\
++\frac{(x_i-\mu_k)^2(\nu_k+1)}{\nu_k\sigma^2+(x_i-\mu_k)^2}\frac{1}{2\nu_k}f(x_i|\mu_k,\sigma_k^2,\nu_k)\\
++\frac{\psi((\nu_k+1)/2)}{2\Gamma((\nu_k+1)/2)}f(x_i|\mu_k,\sigma_k^2,\nu_k)-\frac{\psi(\nu_k/2)}{2\Gamma(\nu_k/2)}f(x_i|\mu_k,\sigma_k^2,\nu_k)
+\end{align*}$$
+
+
+
+Giving the gradient of the likelihood.
+
+
+$$\frac{\partial l(\mu_k,\sigma_k,\nu_k)}{\partial \nu_k}=- \sum_{i=1}^{N}\frac{\pi_k}{\sum_{k}^{K}\pi_{k}f(x_i|\mu_i,\sigma_i\nu_i)} \frac{\partial f(x_i|\mu_k,\sigma_k^2,\nu_k) }{\partial \nu_k}=\\
+-\sum_{i=1}^{N}\frac{-1}{2}w(x_i)+\frac{(\nu_k+1)}{2}\frac{(x_i-\mu_k)^2}{ \nu_k^2\sigma_k^2}w(x_i)+\frac{\psi((\nu+1)/2)}{2\Gamma((\nu+1)/2)}w(x_i)-\frac{\psi(\nu/2)}{2\Gamma(\nu/2)}w(x_i)\\$$
+
+
+
+All the gradients are computed. The goal is to obtain the maximum likelihood, but there is no closed-form solution. For some special cases, the functions might be approximated nicely. However, the gradients can still be used for gradient descent, which is the method I have chosen.
+
+
+
+# Gradient decent.
+Gradient descent is used in the M step to optimize the parameters given the weights.
+
+Two problems arise when using gradient descent. These are described below
+
+## Undershooting the gradient out of domain.
+If gradient descent undershoots and sets $\nu_i<0$ ore $\sigma_i<0$, the density is not defined. This is handled by setting a minimum value for the parameters $\nu_i$ and $\sigma_i$. This means that the minimum value for these parameters is not zero but a value close to zero.
+
+Undershooting can also cause problems when using built-in optimization tools. A pro tip is that if you encounter NaN values as output during optimization, it’s a good idea to start debugging with this issue in mind. In my experience, there is not always a built-in check for these cases.
+
+## Gradient explotion
+This does not fix the problem of gradient explosion. What happens is that the gradient decent may take too large a step in either direction. To make matters worse, the sum in the expression for the gradients can cause the gradients to grow as the sample size increases, which can lead to gradient explosion.
+
+To combat this, I have tried different strategies.
+Below are the two method i tried described.
+
+
+## Normalising the gradient
+
+When analyzing the gradient, it's important to note that the sum is not divided by the size of $X$(denoted as $N$). This means that the absolute value of the gradient grows with $N$. If gradient descent is used with a fixed learning rate $\alpha$, problems may arise where the gradient either undershoots or overshoots. In an implementation setting, this issue is very apparent. However, in real-world problems where the true parameters are unknown, it is impossible to know if the estimated values are accurate.
+
+There are two methods to address this issue: one is to check the norm of the gradient to see if you are near a local optimum, and the other is to increase the number of iterations. I have chosen to normalize the gradient by dividing by $N$. This corresponds to choosing $\alpha$ based on the size of $X$.
+
+
+## Gradient clipping
+Gradient clipping works by setting a maximum value for the norm of the gradient. Specifically, if $|\nabla l(X,\pi,\theta)|>c$ then the gradient is scaled to $\nabla l=c*\frac{\nabla l}{|\nabla l|}$. This allows you to set a maximum value for the norm of the gradient step.
+
+Since this method is based on the norm of the entire gradient, it would be beneficial to vary the clipping based on the type of parameter $\{\mu,\sigma,\nu\}$., especially for $\mu$. I have implemented a version where the clipping is based on different parameters.
+
+
+In testing, it seems that gradient clipping is easy to use and works better. Therefore, in the implementation, gradient clipping is used.
+
+Below is a summary of the gradient descent approach
+#Gradient decent.
+Gradient descent is used in the M step to optimize the parameters given the weights.
+
+There is no closed-form solution for many of the gradients. To make matters worse, the sum in the expression for the gradients can cause the gradients to grow as the sample size increases, potentially leading to exploding gradients. If gradient descent undershoots and sets 
+$\nu_i<0$ or $\sigma_i<0$, the density is not defined. I have addressed the issue of undershooting by setting a minimum value for the parameters 
+$\nu_i$ and $\sigma_i$. This means that the minimum is not zero but a value close to zero.
+
+However, this does not solve the problem of overshooting gradients. The solution to this issue is normalization. One strategy is to normalize the gradient by the sample size 
+N. Another solution is to use gradient clipping. Gradient clipping works by setting a maximum value for the norm of the gradient. Specifically, if $|\nabla l|>c$, then the gradient is set to 
+$\nabla l=c*\frac{\nabla l}{|\nabla l|}$. This allows you to set a maximum value for the norm of the gradient step. Since this method is based on the norm of the entire gradient, it would be beneficial to vary the clipping based on the type of parameter $\{\mu,\sigma,\nu\}$, especially for $\mu$.
+
+I have implemented a version where the clipping is based on different parameter types. Specifically, if the gradient matrix column corresponding to a given parameter is normalized by its corresponding vector and scaled by a given constant for that parameter. If this explanation is confusing, refer to the function Gradient_clipping_vec in the Rcpp file, which is fairly self-explanatory.
+
+Additionally, I have included a check to see if a steep step leads to smaller values in the objective function. If not, the gradient is scaled again by $\alpha$.
+
+### Implentatsion notes for gradient decent
+Since the EM algorithm is an iterative process and R handles loops poorly, Rcpp is used to run C++ code for faster implementation. This is a common approach in many libraries.
+
+## Combining it all to one EM function.
+Since the EM algorithm is a two-step optimization process, it is not strictly necessary to find the smallest value in the M step. The critical aspect is that both steps lead to a decrease in the negative likelihood.
+
+In terms of implementation, this affects the settings used for running gradient descent. For example, setting a maximum number of iterations too high can result in very long runtimes.
+
+I have not found any definitive guidelines for tuning these parameters in general settings, so I have made it possible for the end user to adjust them as needed.
+
+## Initialization
+The EM algorithm requires starting parameters, and if they are too far off, it can affect the runtime. I have chosen to use the hard clustering technique, k-means++, which provides a set of partitions. In each of these partitions, the scaled and shifted t-distributions are fitted and used as the starting parameters.
+
+K-means++ works similarly to k-means, with the primary difference being in the initialization process. The goal of k-means is to minimize the objective function:
+
+$\underset{\mu}{\arg\min}\sum_{k=1}^{K}\sum_{i=1}^{N}|x_i-\mu_k|^2$
+K-means++ improves on this by initially selecting one center randomly and then iteratively assigning points to the nearest center and updating the centers. It can be shown that this process will decrease the objective function, making it a greedy algorithm.
+
+
+# Potential problems
+K-means has the potential problem of local minima. This can be illustrated in two dimensions by assigning points to the four corners of a square and using three of them as starting positions, which can lead to poor initializations.
+
+The issue of non-uniqueness for optima should not be problematic in our case, as we are dealing with continuous distributions (or at least it seems unlikely).
+
+K-means++ is also sensitive to outliers. This problem is present in the structure of the likelihood for mixture models as well. If there is a small cluster of outliers, the fitted t-distribution can become very sharp, giving a high likelihood to those points. This should be mitigated by ensuring that the probability of drawing from this distribution is very small. However, there is no guarantee that this is always the case. Essentially, this means that outliers may not be treated as such but rather as draws from a separate distribution.
+
+Despite these issues, the method based on k-means++ still seems like the best option. Otherwise, one can set the starting parameters manually.
+
+For estimating the individual t-distributions, we use the condition 
+$\nu >2$. Given this, we can use the following results:
+$\mathbb{E}[X]=\mu$ and $Var(X)=\sigma^2\frac{\nu}{\nu-2}\rightarrow 2\frac{ Var(X)}{Var(X)-\sigma^2}=\nu$
+ore 
+$Var(X)=\sigma^2\frac{\nu}{\nu-2}\rightarrow \sqrt{Var(X)\frac{\nu-2}{\nu}}=\sigma$
+
+Since this is only for initialization, if the parameters for the t-distributions are overshot, the EM algorithm should correct for it. The advantage is that with a good estimate of the parameters 
+$\mu$ and 
+$\nu$, and $\sigma$, standard optimization can be used to estimate the last parameter based on the log likelihood.
+
+This method often fails, so it may be better to use grid search or manual tuning.
+
+## GridSearch Initialization
+In most cases, the method of using K-means partitions to estimate $\mu$ and using the proportions to estimate 
+$\pi$ seems reasonable. So, I have implemented a version where GridSearch is used for the parameters $\sigma$ and $\nu$, which is what caused problems before. By doing this, one gets the advantage of the simplicity and relative speed of using K-means while obtaining usable starting parameters for $\sigma$ and $\nu$.
+
+# Measurs
+If one wants to compare models, the Akaike Information Criterion (AIC) and the Bayesian Information Criterion (BIC) are available.
+
+# Code 
+Librays used.
+```{r,warning=FALSE,message=FALSE}
+# library's to Rcpp
+library("Rcpp")
+library("RcppArmadillo")
+library("RcppGSL")
+sourceCpp("compstat.cpp")
+
+library(ClusterR)
+#KMeans_rcpp #kmeans++ works well and is in Rcpp
+
+# for fiting scaled and shifted t-distribution
+library(fitdistrplus)
+library(MASS)
+
+##not used
+# for paraleel gridseach in the intilasation
+#library(doParallel)
+#library(foreach)
+
+```
+
+My own implented code i R.
+```{r,warning=FALSE,message=FALSE}
+# build function in R
+library("metRology")
+library("extraDistr")
+
+#function for generating a vector of draws from a mixture T distribuations
+Draw_mixture_componet <- function(Pi=c(0.2, 0.5, 0.3),
+                                  Mu=c(0,25,50),
+                                  Sigma=c(1,2,1),
+                                  Nu=c(3,4,4),
+                                  N_samples=1000){
+  #sample mixture componets
+  mixture_componoets_sample <- sample(x = 1:length(Pi), size = N_samples, replace = TRUE, prob = Pi)
+  
+  draws=c(rep(0,N_samples))
+  for (i in 1:N_samples){
+    d_i=sample(x = 1:length(Pi), size = 1, replace = TRUE, prob = Pi) #draw_index = d_i
+    draws[i]=rt.scaled(n = 1, df = Nu[d_i], mean = Mu[d_i], sd = Sigma[d_i])
+  }
+  return(draws)
+}
+
+# itnernall function of initialation
+initialize_if_na <- function(var,# variabels
+                             K# numer of partions
+                             ) {
+  if (any(is.na(var))) {
+    return(rep(NA, K))
+  }
+  return(var)
+}
+# estimation of PI by taking proportion of partions
+Estiame_Pi_from_partions= function(Partions_vec,K){
+  Pi=c(rep(0,K))
+  for (i in 1:K){
+    Mid_vec=Partions_vec==i
+    Pi[i]=sum(Mid_vec)/length(Partions_vec)
+    }
+  return(Pi)
+}
+
+# This is not the best parameter, but for now its better than guissing.
+# it seam to work well for well seperated distribuations
+Intiall_parameter_optimasation<-function(X#Data from parametasion
+    ){
+  Mu<-mean(X)
+  variance=var(X)
+  fn1<-function(s){sum(-(dlst(X, df=abs(s), mu = Mu, sigma = sqrt(variance*(abs(s)-2)/abs(s)) , log = TRUE)))}
+  result <- optim(par = 5, fn = fn1, method = "L-BFGS-B",
+  lower = c(2+0.05))
+ 
+  Nu_val=(abs(result$par))
+  Sigma_val=sqrt(variance*(Nu_val-2)/Nu_val) 
+  
+  return(c(Mu,Sigma_val,Nu_val))
+}
+
+
+
+
+Intiall_parameter<-function(X,#Data in vector form
+                        Pi=NA,#Problillaty vector
+                        Mu=NA,# mean vector
+                        Sigma=NA,#Sigma vector 
+                        Nu =NA, # NU vector
+                        K # Number of distribuations
+                  ){
+  if(any(c(is.na(Pi),is.na(Mu),is.na(Sigma),is.na(Nu)))){
+    # get partions
+    KMeans_objet=KMeans_rcpp(as.matrix(X), clusters = K, num_init = 30, initializer = 'kmeans++')
+  }
+  if(any(is.na(Pi))){
+    #Estimate Pi
+    Pi=Estiame_Pi_from_partions(KMeans_objet$clusters,K)
+  }
+  
+  if(any(c(is.na(Mu),is.na(Sigma),is.na(Nu)))){
+    #Make sure their is vector 
+    Mu=initialize_if_na(Mu,K)
+    Sigma=initialize_if_na(Sigma,K)
+    Nu=initialize_if_na(Nu,K)
+    for (i in 1:K){
+      partin_data=X[KMeans_objet$clusters==i]
+      partin_parameter=Intiall_parameter_optimasation(partin_data)
+      if(is.na(Mu[i])){
+        Mu[i]=partin_parameter[1]
+      }
+      if(is.na(Sigma[i])){
+        Sigma[i]=partin_parameter[2]
+      }
+      if(is.na(Nu[i])){
+        Nu[i]=partin_parameter[3]
+      }
+    }
+  }
+  ret_obj=list(Mu = Mu,
+               Sigma = Sigma,
+               Nu=Nu,
+               Pi=Pi)
+  return(ret_obj)
+}
+
+
+
+
+
+
+# use kmeans to Pi estimate pi and mu
+Intiall_parameter_grid=function(X,Pi,Mu,Sigma_grid,Nu_grid,K){
+  if(any(c(is.na(Pi),is.na(Mu)))){
+    # get partions
+    KMeans_objet=KMeans_rcpp(as.matrix(X), clusters = K, num_init = 30, initializer = 'kmeans++')
+  }
+  if(any(is.na(Pi))){
+    #Estimate Pi
+    Pi=Estiame_Pi_from_partions(KMeans_objet$clusters,K)
+  }
+  
+  if(any(is.na(Mu))){
+    #Make sure their is vector 
+    Mu=initialize_if_na(Mu,K)
+    for (i in 1:K){
+      partin_data=X[KMeans_objet$clusters==i]
+      
+      if(is.na(Mu[i])){
+        Mu[i]=mean(partin_data)
+      }
+    }
+  }
+  #preform gridseach but only over paramters Sigma and nu
+  
+  #Finding combinations
+  #Sigma_grid=as.numeric(seq(2,5))
+  #make list with comnations 
+  Sigma_grid_combinations <- expand.grid(rep(list(Sigma_grid), K))
+  #makes List of list whith every combantion in the seq Sigma_grid
+  list_of_combinations_Sigma <- split(as.matrix(Sigma_grid_combinations), seq(nrow(Sigma_grid_combinations)))
+  
+  #Nu_grid=as.numeric(seq(2,10))
+  Nu_grid_combinations<-expand.grid(rep(list(Nu_grid), K))
+  list_of_combinations_Nu <- split(as.matrix(Nu_grid_combinations), seq(nrow(Nu_grid_combinations)))
+  
+  
+  grid_for_seach=expand.grid(list_of_combinations_Sigma,list_of_combinations_Nu)
+  
+  
+  # This can be paralised but, it mean define all the functions from Rcpp in R so they can be importet into the clusters
+  #souch rcpp can export function to paralles so redefine functions
+  
+  # # Number of cores to use
+  # num_cores <- detectCores() - 1 # supose to be nice to let one stand for other stuff
+  # # Create a cluster
+  # cl <- makeCluster(num_cores)
+  # registerDoParallel(cl)
+  # clusterExport(cl, c("loglikelyhood_t_mix", "X", "Pi", "Mu", "grid_for_seach"))
+  # 
+  # results <- foreach(i = 1:nrow(grid_for_seach), .combine = rbind) %dopar% {
+  # row <- grid_for_seach[i, ]
+  # var1 <- as.vector(unlist((row[1]))) 
+  # var2 <-  as.vector(unlist((row[2])))#
+  # 
+  # log_likelihood_val <- den_test(X, Pi, Mu, c(5,5,5), c(4,4,4)) # function can be importet to clusters so the method wont work
+  # c(var1 = var1, var2 = var2, log_likelihood_val = log_likelihood_val) 
+  # }
+  # stopCluster(cl)
+  
+  compute_log_likelihood <- function(row) {
+  var1 <- as.vector(unlist(row[1]))
+  var2 <- as.vector(unlist(row[2]))
+  loglikelyhood_t_mix(X, Pi, Mu, var1, var2)
+  }
+  
+  log_likelihood_values <- sapply(1:nrow(grid_for_seach), function(i) {
+    compute_log_likelihood(grid_for_seach[i, ])
+    })
+  max_log_likelihood <- max(log_likelihood_values)
+  max_index <- which.max(log_likelihood_values)
+  Sigma=as.vector(unlist(grid_for_seach[max_index,]$Var1))
+  Nu=as.vector(unlist(grid_for_seach[max_index,]$Var2))
+  ret_obj=list(Mu = Mu,
+               Sigma = Sigma,
+               Nu=Nu,
+               Pi=Pi,
+               likelyhood=max_log_likelihood,
+               Numer_of_combination=nrow(grid_for_seach))
+  return(ret_obj)
+}
+
+
+
+
+#Kmeans is used to run make intiall partions, when Scaled shifted t distribuation is fitted on each partions.
+# This method works well when the distribuations is well seperated, but not if mixture distributuin is to close.
+#basically what happen if the partions is to close what happens is that partions do not look like t distribution, and can somtime even look like uniform distribution (basically far of), this make the estimation of the ustabel and sometimes lead to error, the solution is to come with some manuall inputs 
+
+EM_Mix_T_Dist<-function(X,#Data in vector form
+                        Pi=NA,#Problillaty vector
+                        Mu=NA,# mean vector
+                        Sigma=NA,#Sigma vector 
+                        Nu =NA, # NU vector
+                        K, # Number of distribuations
+                        Clipping_vector=c(10,5,2),# Max value for clipping  for parameters (Mu,Sigma,Ni)
+                        Max_iter=100,# maxium number of interations for the EM algorithm
+                        alpha=0.02,# scaling for gradient decent
+                        max_iter_gradient=3,# maxium number of times in graident for each iteratin
+                        norm_gradient = 0.1, # stop criteria for gradient decent
+                        Start_method_optim=T){
+  #Checking for intiations process
+  #if no argument is given for Pi , Mu , Sigma and NU is given then a gues is made
+  if(Start_method_optim==T){
+    start_para=Intiall_parameter(X,Pi,Mu,Sigma,Nu,K)
+  }
+  else{
+    start_para=Intiall_parameter_grid(X,Pi,Mu,Sigma_grid=as.numeric(seq(1,15,2)),as.numeric(seq(2,10,2)),K)
+  }
+  Pi=start_para$Pi
+  Mu=start_para$Mu
+  Sigma=start_para$Sigma
+  Nu=start_para$Nu
+  
+  if(any(c(is.na(Pi),is.na(Mu),is.na(Sigma),is.na(Nu)))){
+    print("The intilasaions failed")
+    return(NA)
+  } 
+  #Run EM
+  EM_partion=EM_t_distribution(X,Pi,Mu,Sigma,Nu,Clipping_vector = Clipping_vector,Max_iter=Max_iter,alpha=alpha,max_iter_gradient=max_iter_gradient,norm_gradient = norm_gradient)
+  
+  #Make return object
+  likelyhood=likelyhood_t_mix(X,EM_partion[,4],EM_partion[,1],EM_partion[,2],EM_partion[,3])
+  loglikelyhood=loglikelyhood_t_mix(X,EM_partion[,4],EM_partion[,1],EM_partion[,2],EM_partion[,3])
+  AIC=2*K-2*loglikelyhood
+  BIC=K*log(length(X))-2*loglikelyhood
+  ret_obj=list(Mu = EM_partion[,1],
+               Sigma = EM_partion[,2],
+               Nu=EM_partion[,3],
+               Pi=EM_partion[,4],
+               AIC=AIC,
+               BIC=BIC,
+               likelyhood=likelyhood,
+               loglikelyhood=loglikelyhood,
+               weights=Weights_of_X(X,EM_partion[,4],EM_partion[,1],EM_partion[,2],EM_partion[,3]))
+  return(ret_obj)
+}
+
+```
+
+Rcpp library
+```{r,results='asis',echo=FALSE}
+# Path to your C++ file
+cpp_file_path <- "compstat.cpp"
+
+# Read the C++ file into an R character vector
+cpp_code <- readLines(cpp_file_path, warn = FALSE)
+
+# Print the content of the C++ file inside a code block with C++ syntax highlighting
+knitr::asis_output(paste0("```cpp\n", paste(cpp_code, collapse = "\n"), "\n```"))
+```
+
+
+
+Code for visulsations.
+```{r}
+#code for visualasation
+library(ggplot2)
+
+Plot_mix_t_distribution <- function(X,Pi,Mu,Sigma,Nu,bins=30){
+  plot_fun<-function(x){sapply(x,function(x){Mix_T_density_x(x,Pi,Mu,Sigma,Nu)})}
+  plot <- ggplot(data.frame(X), aes(x = X)) +
+    geom_histogram(aes(y = ..density..), bins = bins, color = "black", alpha = 0.7) +
+    stat_function(fun = plot_fun, aes(color = "Estimated Density"), geom = "line") +
+    scale_color_manual(values = "red") +
+    labs(title = "Histogram with Mixture of t-Distributions", x = "X", y = "Density", color ="Legend") +
+    theme_minimal()
+  return(plot)
+}
+
+```
+
+
+
+# Test
+
+```{r,warning=FALSE,cache=TRUE}
+# test
+
+draws=Draw_mixture_componet()
+
+model<-EM_Mix_T_Dist(draws,K=3)
+
+Plot_mix_t_distribution(draws,model$Pi,model$Mu,model$Sigma,model$Nu,bins=50)
+
+
+
+```
+
+
+
+
+
+
+
+
+# A Look into When Initialization Fails
+The initialization of the means is too close together, as illustrated below.
+```{r,cache=TRUE}
+set.seed(3123)
+draws=Draw_mixture_componet(Mu=c(-1,4,10))
+
+model<-EM_Mix_T_Dist(draws,K=3)
+
+Plot_mix_t_distribution(draws,model$Pi,model$Mu,model$Sigma,model$Nu,bins=50)
+```
+
+Above, I have drawn from a mixture model with 3 components and fitted a 3-component mixture model using automated initialization, even though there are three distinct peaks.
+The initialization fails.
+
+Below their is a second example.
+```{r,cache=TRUE}
+#Make 
+draws=Draw_mixture_componet(Mu=c(0,2,10))
+
+hist(draws,breaks = 100)
+
+KMeans_objet=KMeans_rcpp(as.matrix(draws), clusters = 3, num_init = 90, initializer = 'kmeans++')
+par(mfrow = c(1, 3))
+hist(draws[KMeans_objet$clusters==1],breaks = 30)
+hist(draws[KMeans_objet$clusters==2],breaks = 30)
+hist(draws[KMeans_objet$clusters==3],breaks = 30)
+
+par(mfrow = c(1, 1))
+
+#if one runs the stadart implentasion here the starting guase would fail.
+#model<-EM_Mix_T_Dist(draws,K=3)
+
+
+
+
+
+```
+
+In the above, the histograms of the fractions generated from the K-means++ are shown. Cluster 1 is the well-separated cluster. The rest of the partitions do not resemble a T-distribution, which seems to lead to the high values of $\nu$
+
+The above is generated from mixing three t-distributions but could look like two distributions. My implementation for standardization will, in this case, fail. It will return since the value of gradient becomes to high do to large value of $\nu$.
+
+Below, I showcase how one can manually tune the input and run the method.
+```{r,cache=TRUE}
+Pi_test=Estiame_Pi_from_partions(KMeans_objet$clusters,K=3)
+mu_test=c(mean(draws[KMeans_objet$clusters==1]),mean(draws[KMeans_objet$clusters==2]),mean(draws[KMeans_objet$clusters==3]))
+
+
+# here is to example on how to hand fit the values 
+
+par(mfrow = c(1, 2))
+Plot_mix_t_distribution(draws,Pi_test,mu_test,c(1,2,3),c(2.5,2.5,4),bins=100)
+
+Plot_mix_t_distribution(draws,c(0.2,0.4,0.4),mu_test,c(1,1.7,3),c(2.5,2.5,4),bins=100)
+par(mfrow = c(1, 1))
+
+
+
+```
+
+Lastly, we examine what the implementation yields after manual tuning is used as the starting values.
+
+```{r,cache=TRUE}
+
+Pi_test=Estiame_Pi_from_partions(KMeans_objet$clusters,K=3)
+mu_test=c(mean(draws[KMeans_objet$clusters==1]),mean(draws[KMeans_objet$clusters==2]),mean(draws[KMeans_objet$clusters==3]))
+
+model<-EM_Mix_T_Dist(draws,K=3,Pi=c(0.2,0.4,0.4),Mu=mu_test,Sigma=c(1,1.7,3),Nu=c(2.5,2.5,4),,Max_iter = 300, max_iter_gradient=4)
+
+Plot_mix_t_distribution(draws,model$Pi,model$Mu,model$Sigma,model$Nu,bins = 100)
+
+```
+
+As can be seen the Em algorithm still strugels here.
+
+If one runs the implication with $K=2$ their is no problems.
+
+```{r}
+
+model<-EM_Mix_T_Dist(draws,K=2)
+
+Plot_mix_t_distribution(draws,model$Pi,model$Mu,model$Sigma,model$Nu,bins = 100)
+
+```
+
+## Test with second initialization
+```{r,cache=TRUE}
+set.seed(3123)
+draws=Draw_mixture_componet(Mu=c(-1,4,10))
+
+model<-EM_Mix_T_Dist(draws,K=3,Start_method_optim = F)
+
+
+Plot_mix_t_distribution(draws,model$Pi,model$Mu,model$Sigma,model$Nu,bins=50)
+```
+
+The method based on the grid search is computational expensiv but can give good result.
+
+
+
+## Why the initialization fails.
+If the starting values are too extreme, such as $\nu_i=50000$, the gradient cannot be computed properly due to issues with the gamma function or its derivative. As it stands, the initialization can produce such problematic values if the data from k-means is not well-behaved. If the distribution is not well-separated, the hard clustering technique will not capture enough of the distribution in the decreasing part as the function moves out. This can lead to excessively high values of $\nu$.
+
+# Aplicantion on real data
+
+```{r,cache=TRUE,message=FALSE,warning=FALSE}
+library(mixsmsn)
+
+# Load the dataset
+
+
+data_real_test<-as.vector( unlist(faithful$eruptions))
+
+
+paramenter=Intiall_parameter_grid(data_real_test,Pi=NA,Mu=NA,Sigma=seq(0.1,4,0.5),Nu=seq(1,3,0.5),K=2)
+
+
+
+model<-EM_Mix_T_Dist(data_real_test,Pi=paramenter$Pi,Mu=paramenter$Mu,Sigma = paramenter$Sigma,Nu=paramenter$Nu,K=2,max_iter_gradient = 40,Max_iter =200 )
+Plot_mix_t_distribution(data_real_test,model$Pi,model$Mu,model$Sigma,model$Nu,bins=50)
+
+
+```
+
+Above, I have applied the method to real-world data from the Old Faithful geyser in Yellowstone National Park. The y-axis represents the eruption height. I had to manually feed the grid optimization into the function to get some decent starting values, and I had to run the application more times than the standard, but overall, the method works.
+
+Pro-tip: Potentially, one can speed up the process by hand-tuning the grid search.
+
+
+# Further improvements
+
+## Model selection
+Further improvements should be made to the initialization process, as this would enable automatic model selection based on AIC or BIC. Additionally
+
+## confidence bands
+Implementing confidence bands using a parametric bootstrap approach would be beneficial. Their is small complication since $\pi_i$ label ambiguity. For faster implementation, the bootstrap process could utilize a "hot start," meaning setting the starting values for the parameters to the estimated values.
+
+### Initialization
+The initialization could run in parallel for both the grid search and the optimization method. It seems like R won’t import functions defined in a separate Rcpp file to the cluster. There are two options: define the necessary functions and dependent functions directly in R via the RcppFunction, or do the parallelization in Rcpp. Doing the parallelization directly in Rcpp would be better.
+
+### Gradient decent.
+It would be nice if the gradient descent could use more iterations in the later steps. This is fairly easy to implement, but for an end-user and for me, it's hard to set a good standard setting. Potentially, some of the same effect can be achieved by increasing the number of iterations since if the weights don't change, it would almost be the same.
+
+
+
+
+
+For now the project is closed.
+
+
+
+
+
+
+
+
