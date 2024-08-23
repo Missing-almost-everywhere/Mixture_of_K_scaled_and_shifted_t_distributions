@@ -1,0 +1,15 @@
+Rcpp
+RcppArmadillo
+RcppGSL
+ClusterR
+MASS
+survival
+fitdistrplus
+foreach
+iterators
+doParallel
+metRology
+extraDistr
+ggplot2
+mvtnorm
+mixsmsn

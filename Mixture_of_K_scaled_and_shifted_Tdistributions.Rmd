@@ -262,7 +262,7 @@ $\nu$, and $\sigma$, standard optimization can be used to estimate the last para
 
 This method often fails, so it may be better to use grid search or manual tuning.
 
-## GridSearch Initialization
+## Grid search initialization
 In most cases, the method of using K-means partitions to estimate $\mu$ and using the proportions to estimate 
 $\pi$ seems reasonable. So, I have implemented a version where GridSearch is used for the parameters $\sigma$ and $\nu$, which is what caused problems before. By doing this, one gets the advantage of the simplicity and relative speed of using K-means while obtaining usable starting parameters for $\sigma$ and $\nu$.
 
@@ -729,7 +729,7 @@ Pro-tip: Potentially, one can speed up the process by hand-tuning the grid searc
 ## Model selection
 Further improvements should be made to the initialization process, as this would enable automatic model selection based on AIC or BIC. Additionally
 
-## confidence bands
+## Confidence bands
 Implementing confidence bands using a parametric bootstrap approach would be beneficial. Their is small complication since $\pi_i$ label ambiguity. For faster implementation, the bootstrap process could utilize a "hot start," meaning setting the starting values for the parameters to the estimated values.
 
 ### Initialization
